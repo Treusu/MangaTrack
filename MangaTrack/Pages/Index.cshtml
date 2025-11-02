@@ -1,10 +1,141 @@
 ﻿@page
 @model IndexModel
 @{
-    ViewData["Title"] = "Home page";
+    ViewData["Title"] = "Manhwa Tracker";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<div class="container">
+    <h1>My Manhwa & Novel Tracker</h1>
+
+    <div class="filters">
+        <button class="filter-btn active" data-filter="all">All</button>
+        <button class="filter-btn" data-filter="reading">Reading</button>
+        <button class="filter-btn" data-filter="completed">Completed</button>
+        <button class="filter-btn" data-filter="plan">Plan to Read</button>
+        <input type="text" id="search" placeholder="Search titles..." style="padding: 8px; margin-left: 20px;">
+    </div>
+
+    <div class="manhwa-grid" id="manhwa-list">
+        <!-- JavaScript will populate this -->
+    </div>
+
+    <div class="add-form">
+        <h3>Add New Title</h3>
+        <form id="new-form">
+            <div class="form-group">
+                <label>Title:</label>
+                <input type="text" id="title" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label>Source:</label>
+                <input type="text" id="source" class="form-control">
+            </div>
+            <div class="form-group">
+                <label>Status:</label>
+                <select id="status" class="form-control">
+                    <option value="plan">Plan to Read</option>
+                    <option value="reading">Currently Reading</option>
+                    <option value="completed">Completed</option>
+                </select>
+            </div>
+            <button type="submit" class="btn">Add to List</button>
+        </form>
+    </div>
 </div>
+
+@section Scripts {
+    <script>
+        // Clean manhwa data - no horizontal lines!
+        const manhwaData = [
+            { id: 1, title: "God level assassin in the shadow", source: "MangaDex", status: "plan" },
+            { id: 2, title: "Childhood friend of the zenith", source: "MangaDex", status: "plan" },
+            { id: 3, title: "The Regressed Mercenary's Machinations", source: "English", status: "completed" },
+            { id: 4, title: "Lord of the Mysteries (Remake)", source: "MangaDex", status: "plan" },
+            { id: 5, title: "Shangri-La Frontier", source: "Weeb Central", status: "completed" },
+            { id: 6, title: "Tsukimichi Moonlit Fantasy", source: "MangaDex", status: "plan" },
+            { id: 7, title: "Furoufushi Shoujo no Naedoko Ryokouki", source: "MangaDex", status: "completed" },
+            { id: 8, title: "The Greatest Estate Developer", source: "Asura Scans", status: "plan" },
+            { id: 9, title: "Dumped by my girlfriend, I turned to martial arts", source: "MangaDex", status: "completed" },
+            { id: 10, title: "Uma Musume: Cinderella Gray", source: "MangaDex", status: "plan" },
+            { id: 11, title: "Bad Born Blood", source: "MANHUAUS.COM", status: "completed" },
+            { id: 12, title: "Return of the Sword God-Rank Civil Servant", source: "MangaDex", status: "completed" },
+            { id: 13, title: "The Tale of the Skeleton Messenger", source: "MANHUAUS.COM", status: "plan" },
+            { id: 14, title: "That Time I Got Reincarnated as a Slime", source: "Weeb Central", status: "completed" },
+            { id: 15, title: "Job Switch Log", source: "jobswitchlog.online", status: "plan" }
+        ];
+
+        function renderList(data) {
+            const container = document.getElementById('manhwa-list');
+            container.innerHTML = '';
+
+            if (data.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #666; grid-column: 1 / -1;">No titles found matching your criteria.</p>';
+                return;
+            }
+
+            data.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'manhwa-card';
+                card.innerHTML = `
+                    <div class="manhwa-title">${item.title}</div>
+                    <div class="manhwa-source">${item.source}</div>
+                    <span class="status-badge status-${item.status}">
+                        ${item.status === 'plan' ? 'Plan to Read' :
+                          item.status === 'reading' ? 'Currently Reading' : 'Completed'}
+                    </span>
+                    <button onclick="toggleStatus(${item.id})" style="float: right; background: none; border: none; cursor: pointer; font-size: 1.2rem;">
+                        ${item.status === 'completed' ? '✓' : '○'}
+                    </button>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function toggleStatus(id) {
+            const item = manhwaData.find(m => m.id === id);
+            if (item.status === 'plan') item.status = 'reading';
+            else if (item.status === 'reading') item.status = 'completed';
+            else item.status = 'plan';
+
+            renderList(manhwaData);
+        }
+
+        // Filter buttons
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+
+                const filter = this.dataset.filter;
+                if (filter === 'all') renderList(manhwaData);
+                else renderList(manhwaData.filter(item => item.status === filter));
+            });
+        });
+
+        // Search
+        document.getElementById('search').addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            const filtered = manhwaData.filter(item =>
+                item.title.toLowerCase().includes(searchTerm)
+            );
+            renderList(filtered);
+        });
+
+        // Add new item
+        document.getElementById('new-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const title = document.getElementById('title').value;
+            const source = document.getElementById('source').value;
+            const status = document.getElementById('status').value;
+
+            const newId = manhwaData.length > 0 ? Math.max(...manhwaData.map(m => m.id)) + 1 : 1;
+            manhwaData.push({ id: newId, title, source, status });
+
+            renderList(manhwaData);
+            this.reset();
+        });
+
+        // Initial render
+        renderList(manhwaData);
+    </script>
+}
