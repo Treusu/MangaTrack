@@ -10,6 +10,7 @@
     <div class="filters">
         <button class="filter-btn active" data-filter="all">All</button>
         <button class="filter-btn" data-filter="reading">Reading</button>
+        <button class="filter-btn" data-filter="caughtup">Caught Up</button>
         <button class="filter-btn" data-filter="completed">Completed</button>
         <button class="filter-btn" data-filter="plan">Plan to Read</button>
         <input type="text" id="search" placeholder="Search titles..." style="padding: 8px; margin-left: 20px;">
@@ -19,22 +20,121 @@
         <!-- JavaScript will populate this -->
     </div>
 
+    <!-- Modal for editing chapters, link, AND cover image AND TITLE -->
+    <div id="chapterModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">Edit Details</h3>
+                <span class="close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="editTitle">Title:</label>
+                    <input type="text" id="editTitle" class="form-control" placeholder="Enter title..." required>
+                    <small style="color: #666; font-size: 0.8rem;">You can correct typos in the title here</small>
+                </div>
+                <div class="form-group">
+                    <label for="currentChapter">Current Chapter:</label>
+                    <input type="number" id="currentChapter" class="form-control" min="0">
+                </div>
+                <div class="form-group">
+                    <label for="totalChapters">Total Chapters (0 for ongoing):</label>
+                    <input type="number" id="totalChapters" class="form-control" min="0">
+                </div>
+                <div class="form-group">
+                    <label for="editLink">Reading Link:</label>
+                    <input type="url" id="editLink" class="form-control" placeholder="https://...">
+                    <small style="color: #666; font-size: 0.8rem;">Change where you read this title</small>
+                </div>
+                <div class="form-group">
+                    <label for="editSource">Source/Platform:</label>
+                    <input type="text" id="editSource" class="form-control" placeholder="MangaDex, Webtoon, etc.">
+                </div>
+                <div class="form-group">
+                    <label for="editCoverImage">Cover Image URL:</label>
+                    <input type="url" id="editCoverImage" class="form-control" placeholder="https://...">
+                    <small style="color: #666; font-size: 0.8rem;">Change the cover image</small>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" id="saveChapters" class="btn">Save Changes</button>
+                <button type="button" id="cancelEdit" class="btn btn-secondary">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="deleteModal" class="modal">
+        <div class="modal-content" style="max-width: 400px;">
+            <div class="modal-header">
+                <h3>Confirm Delete</h3>
+                <span class="close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete "<span id="deleteTitle"></span>"?</p>
+                <p style="color: #666; font-size: 0.9rem; margin-top: 0.5rem;">This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" id="confirmDelete" class="btn" style="background: #dc3545;">Delete</button>
+                <button type="button" id="cancelDelete" class="btn btn-secondary">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- AniList Search Modal -->
+    <div id="aniListModal" class="modal">
+        <div class="modal-content" style="max-width: 800px;">
+            <div class="modal-header">
+                <h3>Search AniList</h3>
+                <span class="close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Search for manga/manhwa:</label>
+                    <div style="display: flex; gap: 10px;">
+                        <input type="text" id="aniListSearch" class="form-control" placeholder="Enter title...">
+                        <button type="button" id="performSearch" class="btn">Search</button>
+                    </div>
+                </div>
+                <div id="searchResults" style="max-height: 400px; overflow-y: auto; margin-top: 1rem;">
+                    <!-- Search results will appear here -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary">Cancel</button>
+            </div>
+        </div>
+    </div>
+
     <div class="add-form">
         <h3>Add New Title</h3>
         <form id="new-form">
             <div class="form-group">
                 <label>Title:</label>
-                <input type="text" id="title" class="form-control" required>
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" id="title" class="form-control" required style="flex: 1;">
+                    <button type="button" id="searchAniList" class="btn" style="white-space: nowrap;">Search AniList</button>
+                </div>
             </div>
             <div class="form-group">
                 <label>Source:</label>
                 <input type="text" id="source" class="form-control">
             </div>
             <div class="form-group">
+                <label>Reading Link (optional):</label>
+                <input type="url" id="link" class="form-control" placeholder="https://...">
+            </div>
+            <div class="form-group">
+                <label>Cover Image URL (optional):</label>
+                <input type="url" id="coverImage" class="form-control" placeholder="https://...">
+                <small style="color: #666; font-size: 0.8rem;">Paste a direct image link</small>
+            </div>
+            <div class="form-group">
                 <label>Status:</label>
                 <select id="status" class="form-control">
                     <option value="plan">Plan to Read</option>
                     <option value="reading">Currently Reading</option>
+                    <option value="caughtup">Caught Up</option>
                     <option value="completed">Completed</option>
                 </select>
             </div>
@@ -45,24 +145,217 @@
 
 @section Scripts {
     <script>
-        // Clean manhwa data - no horizontal lines!
-        const manhwaData = [
-            { id: 1, title: "God level assassin in the shadow", source: "MangaDex", status: "plan" },
-            { id: 2, title: "Childhood friend of the zenith", source: "MangaDex", status: "plan" },
-            { id: 3, title: "The Regressed Mercenary's Machinations", source: "English", status: "completed" },
-            { id: 4, title: "Lord of the Mysteries (Remake)", source: "MangaDex", status: "plan" },
-            { id: 5, title: "Shangri-La Frontier", source: "Weeb Central", status: "completed" },
-            { id: 6, title: "Tsukimichi Moonlit Fantasy", source: "MangaDex", status: "plan" },
-            { id: 7, title: "Furoufushi Shoujo no Naedoko Ryokouki", source: "MangaDex", status: "completed" },
-            { id: 8, title: "The Greatest Estate Developer", source: "Asura Scans", status: "plan" },
-            { id: 9, title: "Dumped by my girlfriend, I turned to martial arts", source: "MangaDex", status: "completed" },
-            { id: 10, title: "Uma Musume: Cinderella Gray", source: "MangaDex", status: "plan" },
-            { id: 11, title: "Bad Born Blood", source: "MANHUAUS.COM", status: "completed" },
-            { id: 12, title: "Return of the Sword God-Rank Civil Servant", source: "MangaDex", status: "completed" },
-            { id: 13, title: "The Tale of the Skeleton Messenger", source: "MANHUAUS.COM", status: "plan" },
-            { id: 14, title: "That Time I Got Reincarnated as a Slime", source: "Weeb Central", status: "completed" },
-            { id: 15, title: "Job Switch Log", source: "jobswitchlog.online", status: "plan" }
+        // AniList API Integration
+        const ANILIST_API_URL = 'https://graphql.anilist.co';
+
+        // AniList GraphQL query
+        const SEARCH_QUERY = `
+            query ($search: String, $type: MediaType) {
+                Page(page: 1, perPage: 10) {
+                    media(search: $search, type: $type, sort: POPULARITY_DESC) {
+                        id
+                        title {
+                            romaji
+                            english
+                        }
+                        coverImage {
+                            large
+                            extraLarge
+                        }
+                        description
+                        format
+                        status
+                        chapters
+                        siteUrl
+                    }
+                }
+            }
+        `;
+
+        // Enhanced manhwa data with cover images
+        let manhwaData = JSON.parse(localStorage.getItem('manhwaData')) || [
+            {
+                id: 1,
+                title: "God level assassin in the shadow",
+                source: "MangaDex",
+                status: "plan",
+                link: "https://mangadex.org/title/god-level-assassin",
+                currentChapter: 0,
+                totalChapters: 0,
+                coverImage: "https://via.placeholder.com/200x300/6a5acd/ffffff?text=No+Cover"
+            },
+            {
+                id: 2,
+                title: "Childhood friend of the zenith",
+                source: "MangaDex",
+                status: "plan",
+                link: "https://mangadex.org/title/childhood-friend-zenith",
+                currentChapter: 0,
+                totalChapters: 0,
+                coverImage: "https://via.placeholder.com/200x300/6a5acd/ffffff?text=No+Cover"
+            },
+            {
+                id: 3,
+                title: "The Regressed Mercenary's Machinations",
+                source: "English",
+                status: "completed",
+                link: "https://example.com/regressed-mercenary",
+                currentChapter: 78,
+                totalChapters: 78,
+                coverImage: "https://via.placeholder.com/200x300/28a745/ffffff?text=Completed"
+            },
+            {
+                id: 4,
+                title: "Shangri-La Frontier",
+                source: "Weeb Central",
+                status: "caughtup",
+                link: "https://weebcentral.com/shangri-la",
+                currentChapter: 245,
+                totalChapters: 0,
+                coverImage: "https://via.placeholder.com/200x300/1890ff/ffffff?text=Caught+Up"
+            }
         ];
+
+        function saveToLocalStorage() {
+            localStorage.setItem('manhwaData', JSON.stringify(manhwaData));
+        }
+
+        // Delete functionality
+        let itemToDelete = null;
+
+        function deleteManhwa(id) {
+            const item = manhwaData.find(m => m.id === id);
+            if (item) {
+                itemToDelete = id;
+                document.getElementById('deleteTitle').textContent = item.title;
+                document.getElementById('deleteModal').style.display = 'block';
+            }
+        }
+
+        // Show AniList search modal
+        function showAniListModal() {
+            document.getElementById('aniListModal').style.display = 'block';
+            document.getElementById('aniListSearch').focus();
+        }
+
+        // Hide AniList search modal
+        function hideAniListModal() {
+            document.getElementById('aniListModal').style.display = 'none';
+            document.getElementById('searchResults').innerHTML = '';
+            document.getElementById('aniListSearch').value = '';
+        }
+
+        // Search AniList
+        async function searchAniList() {
+            const searchTerm = document.getElementById('aniListSearch').value.trim();
+            const resultsContainer = document.getElementById('searchResults');
+
+            if (!searchTerm) {
+                resultsContainer.innerHTML = '<div class="loading">Please enter a search term</div>';
+                return;
+            }
+
+            resultsContainer.innerHTML = '<div class="loading">Searching AniList...</div>';
+
+            try {
+                const response = await fetch(ANILIST_API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        query: SEARCH_QUERY,
+                        variables: {
+                            search: searchTerm,
+                            type: 'MANGA'
+                        }
+                    })
+                });
+
+                const data = await response.json();
+                displaySearchResults(data.data.Page.media);
+            } catch (error) {
+                console.error('AniList search error:', error);
+                resultsContainer.innerHTML = '<div class="loading">Error searching AniList. Please try again.</div>';
+            }
+        }
+
+        // Display search results
+        function displaySearchResults(results) {
+            const resultsContainer = document.getElementById('searchResults');
+
+            if (!results || results.length === 0) {
+                resultsContainer.innerHTML = '<div class="loading">No results found</div>';
+                return;
+            }
+
+            resultsContainer.innerHTML = results.map(media => `
+                <div class="search-result" onclick="selectFromAniList(${media.id})">
+                    <img src="${media.coverImage.large}" alt="${media.title.romaji}" class="search-result-cover"
+                         onerror="this.src='https://via.placeholder.com/80x120/6a5acd/ffffff?text=No+Image'">
+                    <div class="search-result-info">
+                        <div class="search-result-title">
+                            ${media.title.english || media.title.romaji}
+                        </div>
+                        <div class="search-result-details">
+                            <span class="search-result-format">${media.format}</span>
+                            ${media.chapters ? `Chapters: ${media.chapters}` : 'Chapters: Unknown'}
+                        </div>
+                        <div class="search-result-details" style="margin-top: 0.5rem;">
+                            ${media.description ? media.description.replace(/<[^>]*>/g, '').substring(0, 100) + '...' : 'No description available'}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Select result from AniList
+        async function selectFromAniList(mediaId) {
+            try {
+                const response = await fetch(ANILIST_API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        query: `
+                            query ($id: Int) {
+                                Media(id: $id) {
+                                    title {
+                                        romaji
+                                        english
+                                    }
+                                    coverImage {
+                                        extraLarge
+                                    }
+                                    description
+                                    format
+                                    status
+                                    chapters
+                                    siteUrl
+                                }
+                            }
+                        `,
+                        variables: { id: mediaId }
+                    })
+                });
+
+                const data = await response.json();
+                const media = data.data.Media;
+
+                document.getElementById('title').value = media.title.english || media.title.romaji;
+                document.getElementById('coverImage').value = media.coverImage.extraLarge;
+                document.getElementById('link').value = media.siteUrl;
+                document.getElementById('source').value = 'AniList';
+
+                hideAniListModal();
+            } catch (error) {
+                console.error('Error fetching media details:', error);
+                alert('Error loading details from AniList');
+            }
+        }
 
         function renderList(data) {
             const container = document.getElementById('manhwa-list');
@@ -76,36 +369,256 @@
             data.forEach(item => {
                 const card = document.createElement('div');
                 card.className = 'manhwa-card';
+
+                let statusIcon = '📖';
+                if (item.status === 'plan') statusIcon = '📚';
+                if (item.status === 'caughtup') statusIcon = '⏰';
+                if (item.status === 'completed') statusIcon = '✅';
+
+                let progressText = '';
+                if (item.status === 'reading' && item.currentChapter > 0) {
+                    progressText = `<div class="chapter-progress">Ch. ${item.currentChapter}</div>`;
+                } else if (item.status === 'caughtup' && item.currentChapter > 0) {
+                    progressText = `<div class="chapter-progress">Caught up to Ch. ${item.currentChapter}</div>`;
+                } else if (item.status === 'completed' && item.totalChapters > 0) {
+                    progressText = `<div class="chapter-progress">Completed: ${item.totalChapters} ch.</div>`;
+                }
+
                 card.innerHTML = `
-                    <div class="manhwa-title">${item.title}</div>
-                    <div class="manhwa-source">${item.source}</div>
-                    <span class="status-badge status-${item.status}">
-                        ${item.status === 'plan' ? 'Plan to Read' :
-                          item.status === 'reading' ? 'Currently Reading' : 'Completed'}
-                    </span>
-                    <button onclick="toggleStatus(${item.id})" style="float: right; background: none; border: none; cursor: pointer; font-size: 1.2rem;">
-                        ${item.status === 'completed' ? '✓' : '○'}
-                    </button>
+                    <div class="manhwa-cover">
+                        <img src="${item.coverImage}" alt="${item.title}" class="cover-image"
+                             onerror="this.src='https://via.placeholder.com/200x300/6c757d/ffffff?text=Image+Error'">
+                    </div>
+                    <div class="manhwa-content">
+                        <div class="manhwa-header">
+                            <div class="manhwa-title">
+                                <a href="${item.link}" target="_blank" class="manhwa-link">${item.title}</a>
+                            </div>
+                            <button onclick="toggleStatus(${item.id})" class="status-toggle" title="Change status">
+                                ${statusIcon}
+                            </button>
+                        </div>
+                        <div class="manhwa-source">${item.source}</div>
+                        ${progressText}
+                        <div class="manhwa-actions">
+                            <span class="status-badge status-${item.status}">
+                                ${getStatusText(item.status)}
+                            </span>
+                            <div class="action-buttons">
+                                <button onclick="editChapters(${item.id})" class="edit-btn" title="Edit details">
+                                    ✏️ Edit
+                                </button>
+                                <button onclick="deleteManhwa(${item.id})" class="delete-btn" title="Delete this title">
+                                    🗑️ Delete
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 `;
                 container.appendChild(card);
             });
         }
 
+        function getStatusText(status) {
+            const statusMap = {
+                'plan': 'Plan to Read',
+                'reading': 'Currently Reading',
+                'caughtup': 'Caught Up',
+                'completed': 'Completed'
+            };
+            return statusMap[status] || status;
+        }
+
         function toggleStatus(id) {
             const item = manhwaData.find(m => m.id === id);
-            if (item.status === 'plan') item.status = 'reading';
-            else if (item.status === 'reading') item.status = 'completed';
-            else item.status = 'plan';
 
+            if (item.status === 'plan') {
+                item.status = 'reading';
+                if (item.currentChapter === 0) {
+                    item.currentChapter = 1;
+                    setTimeout(() => showChapterModal(item), 100);
+                }
+            } else if (item.status === 'reading') {
+                if (item.totalChapters > 0 && item.currentChapter >= item.totalChapters) {
+                    item.status = 'completed';
+                } else {
+                    item.status = 'caughtup';
+                }
+            } else if (item.status === 'caughtup') {
+                item.status = 'completed';
+                if (item.totalChapters === 0 && item.currentChapter > 0) {
+                    item.totalChapters = item.currentChapter;
+                }
+            } else {
+                item.status = 'plan';
+            }
+
+            saveToLocalStorage();
             renderList(manhwaData);
         }
+
+        // Modal management
+        let currentEditingItem = null;
+
+        function showChapterModal(item) {
+                currentEditingItem = item;
+                document.getElementById('modalTitle').textContent = `Edit: ${item.title}`;
+                document.getElementById('editTitle').value = item.title; // ADD THIS LINE
+                document.getElementById('currentChapter').value = item.currentChapter || '';
+                document.getElementById('totalChapters').value = item.totalChapters || '';
+                document.getElementById('editLink').value = item.link || '';
+                document.getElementById('editSource').value = item.source || '';
+                document.getElementById('editCoverImage').value = item.coverImage || '';
+                document.getElementById('chapterModal').style.display = 'block';
+                document.getElementById('editTitle').focus();
+        }
+
+        function hideChapterModal() {
+            document.getElementById('chapterModal').style.display = 'none';
+            currentEditingItem = null;
+        }
+
+        function saveChapterChanges() {
+            if (!currentEditingItem) return;
+
+            const newTitle = document.getElementById('editTitle').value.trim(); // ADD THIS LINE
+            const currentChapter = parseInt(document.getElementById('currentChapter').value) || 0;
+            const totalChapters = parseInt(document.getElementById('totalChapters').value) || 0;
+            const newLink = document.getElementById('editLink').value.trim();
+            const newSource = document.getElementById('editSource').value.trim();
+            const newCoverImage = document.getElementById('editCoverImage').value.trim();
+
+            // ADD TITLE VALIDATION
+            if (!newTitle) {
+                alert('Please enter a title');
+                document.getElementById('editTitle').focus();
+                return;
+            }
+
+            // CHECK FOR DUPLICATE TITLES (excluding current item)
+            const isDuplicate = manhwaData.some(item =>
+                item.id !== currentEditingItem.id &&
+                item.title.toLowerCase() === newTitle.toLowerCase()
+            );
+
+            if (isDuplicate) {
+                alert('This title already exists in your list! Please choose a different title.');
+                document.getElementById('editTitle').focus();
+                return;
+            }
+
+            // UPDATE THE TITLE
+            currentEditingItem.title = newTitle;
+            currentEditingItem.currentChapter = currentChapter;
+            currentEditingItem.totalChapters = totalChapters;
+            currentEditingItem.link = newLink || '#';
+            currentEditingItem.coverImage = newCoverImage || 'https://via.placeholder.com/200x300/6a5acd/ffffff?text=No+Cover';
+
+            if (newSource) {
+                currentEditingItem.source = newSource;
+            }
+
+            if (currentChapter > 0) {
+                if (currentEditingItem.status === 'plan') {
+                    currentEditingItem.status = 'reading';
+                }
+                if (totalChapters > 0 && currentChapter >= totalChapters) {
+                    currentEditingItem.status = 'completed';
+                }
+                else if (totalChapters === 0 && currentEditingItem.status === 'reading') {
+                    currentEditingItem.status = 'caughtup';
+                }
+            }
+
+            saveToLocalStorage();
+            renderList(manhwaData);
+            hideChapterModal();
+        }
+
+        function editChapters(id) {
+            const item = manhwaData.find(m => m.id === id);
+            if (item) {
+                showChapterModal(item);
+            }
+        }
+
+        // Modal event listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            // Close buttons for all modals
+            document.querySelectorAll('.close').forEach(closeBtn => {
+                closeBtn.addEventListener('click', function() {
+                    this.closest('.modal').style.display = 'none';
+                });
+            });
+
+            // Click outside to close for all modals
+            document.querySelectorAll('.modal').forEach(modal => {
+                modal.addEventListener('click', function(e) {
+                    if (e.target === this) {
+                        this.style.display = 'none';
+                    }
+                });
+            });
+
+            // Chapter modal listeners
+            document.getElementById('saveChapters').addEventListener('click', saveChapterChanges);
+            document.getElementById('cancelEdit').addEventListener('click', hideChapterModal);
+
+            // Delete modal listeners
+            document.getElementById('confirmDelete').addEventListener('click', function() {
+                if (itemToDelete) {
+                    const itemIndex = manhwaData.findIndex(m => m.id === itemToDelete);
+                    if (itemIndex !== -1) {
+                        manhwaData.splice(itemIndex, 1);
+                        saveToLocalStorage();
+
+                        // Update display based on current filter
+                        const activeFilter = document.querySelector('.filter-btn.active').dataset.filter;
+                        if (activeFilter === 'all') {
+                            renderList(manhwaData);
+                        } else {
+                            renderList(manhwaData.filter(item => item.status === activeFilter));
+                        }
+                    }
+                    itemToDelete = null;
+                }
+                document.getElementById('deleteModal').style.display = 'none';
+            });
+
+            document.getElementById('cancelDelete').addEventListener('click', function() {
+                itemToDelete = null;
+                document.getElementById('deleteModal').style.display = 'none';
+            });
+
+            // AniList event listeners
+            document.getElementById('searchAniList').addEventListener('click', showAniListModal);
+            document.getElementById('performSearch').addEventListener('click', searchAniList);
+            document.getElementById('aniListSearch').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') searchAniList();
+            });
+
+            // Cancel button for AniList modal
+            document.querySelector('#aniListModal .btn-secondary').addEventListener('click', hideAniListModal);
+
+            // Keyboard navigation
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    const openModals = document.querySelectorAll('.modal[style*="display: block"]');
+                    openModals.forEach(modal => {
+                        modal.style.display = 'none';
+                    });
+                }
+                if (e.key === 'Enter' && document.getElementById('chapterModal').style.display === 'block') {
+                    saveChapterChanges();
+                }
+            });
+        });
 
         // Filter buttons
         document.querySelectorAll('.filter-btn').forEach(btn => {
             btn.addEventListener('click', function() {
                 document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
                 this.classList.add('active');
-
                 const filter = this.dataset.filter;
                 if (filter === 'all') renderList(manhwaData);
                 else renderList(manhwaData.filter(item => item.status === filter));
@@ -115,22 +628,44 @@
         // Search
         document.getElementById('search').addEventListener('input', function(e) {
             const searchTerm = e.target.value.toLowerCase();
-            const filtered = manhwaData.filter(item =>
-                item.title.toLowerCase().includes(searchTerm)
-            );
+            const filtered = manhwaData.filter(item => item.title.toLowerCase().includes(searchTerm));
             renderList(filtered);
         });
 
-        // Add new item
+        // Add form
         document.getElementById('new-form').addEventListener('submit', function(e) {
             e.preventDefault();
-            const title = document.getElementById('title').value;
-            const source = document.getElementById('source').value;
+            const title = document.getElementById('title').value.trim();
+            const source = document.getElementById('source').value.trim();
             const status = document.getElementById('status').value;
+            const link = document.getElementById('link').value.trim() || '#';
+            const coverImage = document.getElementById('coverImage').value.trim() || 'https://via.placeholder.com/200x300/6a5acd/ffffff?text=No+Cover';
+
+            if (!title) {
+                alert('Please enter a title');
+                document.getElementById('title').focus();
+                return;
+            }
+
+            if (manhwaData.some(item => item.title.toLowerCase() === title.toLowerCase())) {
+                alert('This title already exists in your list!');
+                document.getElementById('title').focus();
+                return;
+            }
 
             const newId = manhwaData.length > 0 ? Math.max(...manhwaData.map(m => m.id)) + 1 : 1;
-            manhwaData.push({ id: newId, title, source, status });
+            manhwaData.push({
+                id: newId,
+                title,
+                source,
+                status,
+                link,
+                coverImage,
+                currentChapter: 0,
+                totalChapters: 0
+            });
 
+            saveToLocalStorage();
             renderList(manhwaData);
             this.reset();
         });
@@ -139,3 +674,9 @@
         renderList(manhwaData);
     </script>
 }
+
+<footer style="margin-top: 50px; padding: 20px; text-align: center; color: #666;">
+    <div>
+        &copy; 2025 - MangaTrack - Your Manhwa Collection
+    </div>
+</footer>
